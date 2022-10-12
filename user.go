@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net"
 )
 
@@ -24,7 +25,7 @@ func NewUser(conn net.Conn, server *Server) *User {
 		server: server,
 	}
 
-	//启动监听当前user channel消息的goroutine
+	//Start a goroutine that listens for messages on the current user channel
 	go user.ListenMessage()
 
 	return user
@@ -54,7 +55,11 @@ func (u *User) Offline() {
 
 // SendMsg Send a message to the client corresponding to the current User
 func (u *User) SendMsg(msg string) {
-	u.conn.Write([]byte(msg))
+	_, err := u.conn.Write([]byte(msg))
+	if err != nil {
+		fmt.Println("send message err:", err)
+		return
+	}
 }
 
 // handleMessage handle user message
@@ -72,7 +77,7 @@ func (u *User) handleMessage(msg string) {
 		newName := msg[7:]
 		//newName := strings.Split(msg, "|")[1]
 
-		//判断name是否存在
+		//Check if name exists
 		_, ok := u.server.OnlineMap[newName]
 		if ok {
 			u.SendMsg("当前用户名已被使用")
@@ -94,6 +99,10 @@ func (u *User) handleMessage(msg string) {
 func (u *User) ListenMessage() {
 	for {
 		msg := <-u.C
-		u.conn.Write([]byte(msg + "\n"))
+		_, err := u.conn.Write([]byte(msg + "\n"))
+		if err != nil {
+			fmt.Println("listen message err:", err)
+			return
+		}
 	}
 }
