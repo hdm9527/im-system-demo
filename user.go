@@ -50,9 +50,24 @@ func (u *User) Offline() {
 	u.server.BroadCast(u, "已下线")
 }
 
+// SendMsg Send a message to the client corresponding to the current User
+func (u *User) SendMsg(msg string) {
+	u.conn.Write([]byte(msg))
+}
+
 // handleMessage handle user message
 func (u *User) handleMessage(msg string) {
-	u.server.BroadCast(u, msg)
+	if msg == "who" {
+		//query online users
+		u.server.mapLock.Lock()
+		for _, user := range u.server.OnlineMap {
+			onlineMsg := "[" + user.Addr + "]" + user.Name + ":" + "在线...\n"
+			u.SendMsg(onlineMsg)
+		}
+		u.server.mapLock.Unlock()
+	} else {
+		u.server.BroadCast(u, msg)
+	}
 }
 
 // ListenMessage listen for messages
