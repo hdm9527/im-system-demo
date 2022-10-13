@@ -78,6 +78,28 @@ func (c *Client) menu() bool {
 	}
 }
 
+func (c *Client) PublicChat() {
+	//Prompt the user to send a message
+	var chatMsg string
+
+	fmt.Println(">>>>>请输入聊天内容，exit退出.")
+	fmt.Scanln(&chatMsg)
+
+	for chatMsg != "exit" {
+		//send to server
+		sendMsg := chatMsg + "\n"
+		_, err := c.conn.Write([]byte(sendMsg))
+		if err != nil {
+			fmt.Println("conn Write err:", err)
+			break
+		}
+
+		chatMsg = ""
+		fmt.Println(">>>>>请输入聊天内容，exit退出.")
+		fmt.Scanln(&chatMsg)
+	}
+}
+
 func (c *Client) Run() {
 	for c.flag != 0 {
 		for c.menu() != true {
@@ -85,7 +107,7 @@ func (c *Client) Run() {
 
 		switch c.flag {
 		case 1:
-			fmt.Println("公聊模式选择...")
+			c.PublicChat()
 		case 2:
 			fmt.Println("私聊模式选择...")
 		case 3:
