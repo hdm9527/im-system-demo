@@ -3,7 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"net"
+	"os"
 )
 
 type Client struct {
@@ -11,6 +13,7 @@ type Client struct {
 	ServerPort int
 	Name       string
 	conn       net.Conn
+	flag       int //client mode
 }
 
 func NewClient(serverIp string, serverPort int) *Client {
@@ -18,6 +21,7 @@ func NewClient(serverIp string, serverPort int) *Client {
 	client := &Client{
 		ServerIp:   serverIp,
 		ServerPort: serverPort,
+		flag:       999,
 	}
 
 	//link to server
@@ -31,6 +35,63 @@ func NewClient(serverIp string, serverPort int) *Client {
 
 	//return object
 	return client
+}
+
+// DealResponse Process the message responded by the server and display it directly to the standard output
+func (c *Client) DealResponse() {
+	//Once c.conn has data, copy it directly to stdout standard output, permanently blocking listening
+	io.Copy(os.Stdout, c.conn)
+}
+
+func (c *Client) UpdateName() bool {
+	fmt.Println(">>>>>请输入用户名:")
+	fmt.Scanln(&c.Name)
+
+	sendMsg := "rename|" + c.Name + "\n"
+	_, err := c.conn.Write([]byte(sendMsg))
+	if err != nil {
+		fmt.Println("conn.Write err:", err)
+		return false
+	}
+	return true
+}
+
+func (c *Client) menu() bool {
+	var flag int
+
+	fmt.Println("1.公聊模式")
+	fmt.Println("2.私聊模式")
+	fmt.Println("3.更改用户名")
+	fmt.Println("0.退出")
+
+	_, err := fmt.Scanln(&flag)
+	if err != nil {
+		fmt.Println("输入有误！")
+		return false
+	}
+	if flag >= 0 && flag <= 3 {
+		c.flag = flag
+		return true
+	} else {
+		fmt.Println(">>>>>请输入合法范围内的数字<<<<<")
+		return false
+	}
+}
+
+func (c *Client) Run() {
+	for c.flag != 0 {
+		for c.menu() != true {
+		}
+
+		switch c.flag {
+		case 1:
+			fmt.Println("公聊模式选择...")
+		case 2:
+			fmt.Println("私聊模式选择...")
+		case 3:
+			c.UpdateName()
+		}
+	}
 }
 
 var serverIp string
@@ -51,8 +112,11 @@ func main() {
 		return
 	}
 
+	//Start a goroutine to process the server's receipt message
+	go client.DealResponse()
+
 	fmt.Println(">>>>> 链接服务器成功")
 
 	//Start the client's business
-	select {}
+	client.Run()
 }
