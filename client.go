@@ -78,6 +78,50 @@ func (c *Client) menu() bool {
 	}
 }
 
+// QueryUsers query online users
+func (c *Client) QueryUsers() {
+	sendMsg := "who\n"
+	_, err := c.conn.Write([]byte(sendMsg))
+	if err != nil {
+		fmt.Println("conn Write err:", err)
+		return
+	}
+}
+
+// PrivateChat private chat mode
+func (c *Client) PrivateChat() {
+	var remoteName string
+	var chatMsg string
+
+	c.QueryUsers()
+	fmt.Println(">>>>>请输入聊天对象[用户名]，exit退出")
+	fmt.Scanln(&remoteName)
+
+	for remoteName != "exit" {
+		fmt.Println(">>>>>请输入消息内容，exit退出")
+		fmt.Scanln(&chatMsg)
+
+		for chatMsg != "exit" {
+			if len(chatMsg) != 0 {
+				sendMsg := "to|" + remoteName + "|" + chatMsg + "\n"
+				_, err := c.conn.Write([]byte(sendMsg))
+				if err != nil {
+					fmt.Println("conn Write err:", err)
+					break
+				}
+			}
+
+			chatMsg = ""
+			fmt.Println(">>>>>请输入消息内容，exit退出")
+			fmt.Scanln(&chatMsg)
+		}
+
+		c.QueryUsers()
+		fmt.Println(">>>>>请输入聊天对象[用户名]，exit退出")
+		fmt.Scanln(&remoteName)
+	}
+}
+
 func (c *Client) PublicChat() {
 	//Prompt the user to send a message
 	var chatMsg string
@@ -109,7 +153,7 @@ func (c *Client) Run() {
 		case 1:
 			c.PublicChat()
 		case 2:
-			fmt.Println("私聊模式选择...")
+			c.PrivateChat()
 		case 3:
 			c.UpdateName()
 		}
